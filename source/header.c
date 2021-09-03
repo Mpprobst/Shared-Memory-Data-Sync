@@ -9,7 +9,6 @@
 #include "header.h"
 
 /* Lock the semaphore n of the semaphore set semaph */
-
 void Wait(int semaph, int n)
 {
   struct sembuf sop;
@@ -43,8 +42,11 @@ int GetSemaphs(key_t k, int n)
   return semid;
 }
 
-// return -1 for failure, 0 for success
-int ChangeName(char *fullname, struct StudentInfo *student) {
+int ValidateName(char *fullname) {
+  if (strlen(fullname) < 1) {
+    return -1;
+  }
+
   int ct = 0;
   int spaces[3];   // 2 max spaces between firstname, middlename, lastname, last idx is length of total string
   spaces[1] = strlen(fullname);
@@ -61,26 +63,62 @@ int ChangeName(char *fullname, struct StudentInfo *student) {
     return -1;
   }
 
-  // todo: trim excess whitespace and capatialize name;
-  memcpy(student->fName, &fullname[0], spaces[0]*sizeof(char));
-  student->fName[spaces[0]] = '\0';
-
-  if (ct == 2) {
-    student->middleInit = fullname[spaces[1]];
-  }
-
   if ((spaces[ct] - spaces[ct-1]) > NAME_LENGTH) {
     return -1;
   }
 
+  return 0;
+}
+
+// return -1 for failure, 0 for success
+int ChangeName(char *fullname, struct StudentInfo *student) {
+  int ct = 0;
+  int spaces[3];   // 2 max spaces between firstname, middlename, lastname, last idx is length of total string
+  spaces[1] = strlen(fullname);
+  spaces[2] = strlen(fullname);
+
+  for (int i = 0; i < strlen(fullname); i++) {
+    if (fullname[i] == ' ') {
+      spaces[ct] = i;
+      ct++;
+    }
+  }
+
+  if (ValidateName(fullname) == -1) {
+    return -1;
+  }
+
+  // todo: trim excess whitespace and capatialize name;
+  memcpy(student->fName, &fullname[0], spaces[0]*sizeof(char));
+  student->fName[spaces[0]] = '\0';
+  if (ct == 2) {
+    student->middleInit = fullname[spaces[1]-1];
+  }
+  else {
+    student->middleInit = ' ';
+  }
+
   memcpy(student->lName, &fullname[spaces[ct-1]+1], (spaces[ct]-spaces[ct-1])*sizeof(char));
   student->lName[spaces[ct]-spaces[ct-1]-2] = '\0';
+  //printf("spacecount: %i. changed name to: %s %c %s\n", ct, student->fName, student->middleInit, student->lName);
+  return 0;
+}
+
+int ValidateID(char *id) {
+  //printf("validtaing id: %s", id);
+  if (strlen(id) > ID_LENGTH) {
+    return -1;
+  }
+
+  if (strlen(id) < 1) {
+    return -1;
+  }
 
   return 0;
 }
 
 int ChangeID(char *id, struct StudentInfo *student) {
-  if (strlen(id) > ID_LENGTH) {
+  if (ValidateID(id) == -1) {
     return -1;
   }
 
@@ -89,19 +127,44 @@ int ChangeID(char *id, struct StudentInfo *student) {
   return 0;
 }
 
-int ChangeAddress(char *fulladdr, struct StudentInfo *student) {
+int ValidateAddress(char *fulladdr) {
   if (strlen(fulladdr) > ADDRESS_LENGTH) {
     return -1;
   }
+
+  if (strlen(fulladdr) < 1) {
+    return -1;
+  }
+
   // TODO: ensure address is in format: Housenum Streetname City, State ZIP
+  return 0;
+}
+
+int ChangeAddress(char *fulladdr, struct StudentInfo *student) {
+  if (ValidateAddress(fulladdr) == -1) {
+    return -1;
+  }
 
   memcpy(student->address, fulladdr, (strlen(fulladdr)*sizeof(char)) );
   student->address[strlen(fulladdr)-1] = '\0';
   return 0;
 }
 
-int ChangePhone(char *phoneNum, struct StudentInfo *student) {
+int ValidatePhone(char *phoneNum) {
   if (strlen(phoneNum) > PHONE_LENGTH) {
+    return -1;
+  }
+
+  if (strlen(phoneNum) < 1) {
+    return -1;
+  }
+  // TODO: make sure all characters are numbers
+  // if number includes dashes, remove them.
+  return 0;
+}
+
+int ChangePhone(char *phoneNum, struct StudentInfo *student) {
+  if (ValidatePhone(phoneNum) == -1) {
     return -1;
   }
 

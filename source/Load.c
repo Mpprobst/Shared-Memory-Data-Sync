@@ -21,6 +21,8 @@ int main (int argc, char* argv[]) {
     exit(3);
   }
 
+  struct StudentInfo students[NUM_RECORDS];
+
   // read the input file
   FILE *fp ;
   char *line = NULL;
@@ -34,35 +36,11 @@ int main (int argc, char* argv[]) {
     fprintf(stderr, "\nError opening file\n");
     exit(1);
   }
-/*
-  // get a set of NUM_SEMAPHS semaphores
-  int sema_set;
-  sema_set = GetSemaphs(SEMA_KEY, NUM_SEMAPHS);
-  if ((sema_set < 0) ){
-    perror("create: semget failed");
-    exit(2);
-  }
 
-  // Create a shared memory segment to store the shared variable read_count;
-  int read_count;
-  int read_id = shmget(KEY, sizeof(int),IPC_CREAT|0666);
-  if (read_id <0){
-    perror("create: shmget failed");
-    exit(1);
-  }
-
-  // attach the shared memory segment to the process's address space
-  read_count=(int)shmat(read_id,0,0);
-  if (read_count < 0 {
-    perror("create: shmat failed");
-    exit(2);
-  }
-*/
-  struct StudentInfo student;
+  int student_ct = 0;
   while ((read = getline(&line, &len, fp)) != -1) {
     // some part of the record was invalid, skip the rest
     if (skip > 0) {
-      //printf("--------SKIP %i--------\n", skip);
       ct = 0;
       skip--;
       continue;
@@ -70,44 +48,18 @@ int main (int argc, char* argv[]) {
 
     ct++;
     if (ct == 1) {
-      skip = ChangeName(line, &student);
+      skip = ChangeName(line, &students[student_ct]);
     }
     else if (ct == 2) {
-      skip = ChangeID(line, &student);
+      skip = ChangeID(line, &students[student_ct]);
     }
     else if (ct == 3) {
-      skip = ChangeAddress(line, &student);
+      skip = ChangeAddress(line, &students[student_ct]);
     }
     else if (ct == 4) {
       ct = 0;
-      skip = ChangePhone(line, &student);
-/*
-      // Do we create a shared memory segment each time we read a new student?
-      // Create a shared memory segment to store the students' records ;
-      int id = shmget(KEY, SEGSIZE,IPC_CREAT|0666);
-      if (id <0){
-        perror("create: shmget failed");
-        exit(1);
-      }
-
-      // attach the shared memory segment to the process's address space
-      struct StudentInfo *infoptr;
-      infoptr=(struct StudentInfo *)shmat(id,0,0);
-      if (infoptr <= (struct StudentInfo *) (0)) {
-        perror("create: shmat failed");
-        exit(2);
-      }
-
-      // store data in the shared memory segment
-      strcpy(infoptr->fName, student->fName);
-      strcpy(infoptr->lName, student->lName);
-      infoptr->middleInit = *student->middleInit;
-      strcpy(infoptr->id, student->id);
-      strcpy(infoptr->address, student->address);
-      strcpy(infoptr->telNumber, student->telNumber);
-      strcpy(infoptr->whoModified, " ");
-      */
-      printf("--- NEW STUDENT ---\n NAME: %s %s\n ID: %s\n ADDRESS: %s\n PHONE: %s\n-------------------\n", student.fName, student.lName, student.id, student.address, student.telNumber);
+      skip = ChangePhone(line, &students[student_ct]);
+      student_ct++;
     }
 
     if (skip == -1) {
@@ -117,13 +69,60 @@ int main (int argc, char* argv[]) {
   free(line);
   fclose(fp);
 
+  // Create a shared memory segment to store the students' records
+  int id = shmget(KEY, SEGSIZE*NUM_RECORDS,IPC_CREAT|0666);
+  if (id <0){
+    perror("load: shmget failed");
+    exit(1);
+  }
+
+  // attach the shared memory segment to the process's address space
+  struct StudentInfo *infoptr;
+  infoptr=(struct StudentInfo *)shmat(id,0,0);
+  if (infoptr <= (struct StudentInfo *) (0)) {
+    perror("load: shmat failed");
+    exit(2);
+  }
+
   // Create a semaphore set consisting of enough semaphores (actually 2 will do);
-  // Attach the two shared memory segments created;
-  //
-  // Wait(semaset, 0); // assuming semaset is the id of the semaphore set created
+  int sema_set;
+  sema_set = GetSemaphs(SEMA_KEY, NUM_SEMAPHS);
+  if ((sema_set < 0) ){
+    perror("load: semget failed");
+    exit(2);
+  }
+  Wait(sema_set, 0); // assuming semaset is the id of the semaphore set created
+
+  // Create a shared memory segment to store the shared variable read_count;
+  int *readptr;
+  int read_id = shmget(READ_KEY, sizeof(int),IPC_CREAT|0666);
+  if (read_id <0){
+    perror("load: shmget failed");
+    exit(1);
+  }
+
+  // attach the shared memory segment to the process's address space
+  readptr=(int *)shmat(read_id,0,0);
+  if (readptr <= (int *) (0)) {
+    perror("load: shmat failed");
+    exit(2);
+  }
+
   // Initialize read_count to 0 (the shared memory allocated for storing this var);
+  *readptr = 0;
+
+  printf("loaded %i students\n", student_ct);
   // Load the shared memory segment with data from the file;
-  // Signal(semaset, 0);
-  // ---------------------
+  for (int i = 0; i < student_ct; i++) {
+    strcpy(infoptr[i].fName, students[i].fName);
+    strcpy(infoptr[i].lName, students[i].lName);
+    infoptr[i].middleInit = students[i].middleInit;
+    strcpy(infoptr[i].id, students[i].id);
+    strcpy(infoptr[i].address, students[i].address);
+    strcpy(infoptr[i].telNumber, students[i].telNumber);
+    strcpy(infoptr[i].whoModified, " ");
+  }
+
+  Signal(sema_set, 0);
   return 0;
 }
