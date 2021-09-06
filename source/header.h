@@ -34,3 +34,4 @@ int ValidateAddress(char *fulladdr);
 int ChangeAddress(char *fulladdr, struct StudentInfo *student);
 int ValidatePhone(char *phoneNum);
 int ChangePhone(char *phoneNum, struct StudentInfo *student);
+void PrintStudent(struct StudentInfo *s);

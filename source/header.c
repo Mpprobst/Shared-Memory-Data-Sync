@@ -172,3 +172,17 @@ int ChangePhone(char *phoneNum, struct StudentInfo *student) {
   student->telNumber[PHONE_LENGTH-1] = '\0';
   return 0;
 }
+
+void PrintStudent(struct StudentInfo *stu) {
+  char fullname[50];
+  strcpy(fullname, stu->fName);
+  strcat(fullname, " ");
+  if (stu->middleInit != ' ') {
+    strncat(fullname, &stu->middleInit, 1);
+    strcat(fullname, " ");
+  }
+  strcat(fullname, stu->lName);
+  printf("%s\n ID: %s\n Address: %s\n Phone Number: %s\n",
+   fullname, stu->id, stu->address, stu->telNumber);
+  printf(" Last modified by: %s\n \n ", stu->whoModified);
+}

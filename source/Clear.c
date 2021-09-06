@@ -15,7 +15,7 @@
 #include "password.h"
 
 // clear is a writer
-int main (int argc, char* argv[]) {
+int main () {
   // Get the ids of the two shared memory segments created;
   int id = shmget(KEY, SEGSIZE*NUM_RECORDS, 0);
   if (id < 0){
@@ -49,7 +49,7 @@ int main (int argc, char* argv[]) {
   if (ValidatePassword() == -1) {
     exit(1);
   }
-  //
+
   Wait(sema_set, 0); // assuming semaset is the id of the semaphore set
 
   // write the contents of the shared memory to file in the format of the input file;
@@ -93,8 +93,8 @@ int main (int argc, char* argv[]) {
 
   shmdt((int *)readptr);  // detach the shared memory segment
   shmctl(read_id, IPC_RMID,(struct shmid_ds *)0); // destroy shared memory segment
-  Signal(sema_set, 0);
 
+  Signal(sema_set, 0);
   // delete the semaphores.
   semctl(sema_set, 0, IPC_RMID); // Remove the semaphore set
   return 0;
