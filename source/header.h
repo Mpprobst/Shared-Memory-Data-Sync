@@ -1,9 +1,12 @@
-/* header.h */
+// File: header.h
+// Purpose: defines global constants and StudentInfo struct
+// Author: Michael Probst
+
 #define KEY ((key_t)(71761))
 #define SEGSIZE sizeof(struct StudentInfo)
 #define NUM_RECORDS 50
 
-#define NUM_SEMAPHS 5
+#define NUM_SEMAPHS 2
 #define SEMA_KEY ((key_t)(1761))
 
 #define READ_KEY ((key_t)(1207))
@@ -13,6 +16,7 @@
 #define ADDRESS_LENGTH 60
 #define PHONE_LENGTH 11
 
+// Acknowldegement: This struct provided by project sample code
 struct StudentInfo{
   char fName[NAME_LENGTH];
   char lName[NAME_LENGTH];
@@ -25,7 +29,12 @@ struct StudentInfo{
 
 void Wait(int semaph, int n);
 void Signal(int semaph, int n);
+void PrintSemaph(int semaph, int n);
 int GetSemaphs(key_t k, int n);
+struct StudentInfo *GetSharedMemories(int *id);
+int *GetReadCounter(int *read_id);
+void IncramentReadCount(int sema_set, int *readptr);
+void DecramentReadCount(int sema_set, int *readptr);
 int ValidateName(char *fullname);
 int ChangeName(char *fullname, struct StudentInfo *student);
 int ValidateID(char *id);

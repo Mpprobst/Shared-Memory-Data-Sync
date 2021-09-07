@@ -14,7 +14,7 @@
 #include <sys/sem.h>
 #include "header.h"
 
-// load is a writer
+// load is a writer. writers use semaphore idx 0
 int main (int argc, char* argv[]) {
   if (argc != 2){
     fprintf(stderr, "usage: change <file name>\n");
@@ -91,7 +91,8 @@ int main (int argc, char* argv[]) {
     perror("load: semget failed");
     exit(2);
   }
-  Wait(sema_set, 0); // assuming semaset is the id of the semaphore set created
+
+  Wait(sema_set, 0); // writing, lock the shared memory
 
   // Create a shared memory segment to store the shared variable read_count;
   int *readptr;
@@ -102,7 +103,7 @@ int main (int argc, char* argv[]) {
   }
 
   // attach the shared memory segment to the process's address space
-  readptr=(int *)shmat(read_id,0,0);
+  readptr=(int *)shmat(read_id, 0, 0);
   if (readptr <= (int *) (0)) {
     perror("load: shmat failed");
     exit(2);
@@ -110,8 +111,6 @@ int main (int argc, char* argv[]) {
 
   // Initialize read_count to 0 (the shared memory allocated for storing this var);
   *readptr = 0;
-
-  printf("loaded %i students\n", student_ct);
   // Load the shared memory segment with data from the file;
   for (int i = 0; i < student_ct; i++) {
     strcpy(infoptr[i].fName, students[i].fName);
@@ -123,6 +122,8 @@ int main (int argc, char* argv[]) {
     strcpy(infoptr[i].whoModified, " ");
   }
 
-  Signal(sema_set, 0);
+  sleep(2);
+  printf("loaded %i students\n", student_ct);
+  Signal(sema_set, 0);  // done writing, free semaphore
   return 0;
 }

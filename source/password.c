@@ -12,7 +12,7 @@ int EnterPassword(int attempt) {
       return -1;
     }
   }
-  printf("Password correct!");
+  printf("Password correct!\n");
   return 0;
 }
 

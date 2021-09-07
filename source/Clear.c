@@ -14,34 +14,14 @@
 #include "header.h"
 #include "password.h"
 
-// clear is a writer
+// clear is a writer. writers use semaphore idx 0
 int main () {
-  // Get the ids of the two shared memory segments created;
-  int id = shmget(KEY, SEGSIZE*NUM_RECORDS, 0);
-  if (id < 0){
-    perror("clear: shmget failed 1");
-    exit(1);
-  }
-
-  int read_id = shmget(READ_KEY, sizeof(int), 0);
-  if (read_id < 0){
-    perror("clear: shmget failed 2");
-    exit(1);
-  }
-
   // Attach the shared memory segments;
-  struct StudentInfo *infoptr=(struct StudentInfo *)shmat(id, 0, 0);
-  if (infoptr <= (struct StudentInfo *) (0)) {
-    perror("clear: shmat failed");
-    exit(2);
-  }
-
-  int *readptr=(int *)shmat(read_id, 0, 0);
-  if (readptr <= (int *) (0)) {
-    perror("clear: shmat failed");
-    exit(2);
-  }
-
+  int id = 0;
+  int read_id = 0;
+  struct StudentInfo *infoptr = GetSharedMemories(&id);
+  // Get read count pointer
+  int *readptr = GetReadCounter(&read_id);
   // Get the id of the semaphore set created in Load.c;
   int sema_set=semget(SEMA_KEY, 0, 0);
 
@@ -50,7 +30,7 @@ int main () {
     exit(1);
   }
 
-  Wait(sema_set, 0); // assuming semaset is the id of the semaphore set
+  //Wait(sema_set, 0); // assuming semaset is the id of the semaphore set
 
   // write the contents of the shared memory to file in the format of the input file;
   FILE *fp;
@@ -87,6 +67,7 @@ int main () {
   }
 
   fclose(fp);
+
   // delete the shared memory segments
   shmdt((char *)infoptr); // detach the shared memory segment
   shmctl(id, IPC_RMID,(struct shmid_ds *)0);  // destroy shared memory segment
@@ -94,8 +75,11 @@ int main () {
   shmdt((int *)readptr);  // detach the shared memory segment
   shmctl(read_id, IPC_RMID,(struct shmid_ds *)0); // destroy shared memory segment
 
-  Signal(sema_set, 0);
+  Signal(sema_set, 0);  // done writing
+
   // delete the semaphores.
   semctl(sema_set, 0, IPC_RMID); // Remove the semaphore set
+
+  printf("Shared memory and semaphores destroyed.\n");
   return 0;
 }

@@ -1,4 +1,9 @@
-/*header.c*/
+// File: header.c
+// Purpose: Implements common functions such as getting references to shared
+//          memory and semaphores and common functions on semaphores. Also
+//          implements logic that verifies a student record is properly formatted.
+// Author: Michael Probst
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +14,7 @@
 #include "header.h"
 
 /* Lock the semaphore n of the semaphore set semaph */
+// Acknowldegement: This function provided by project sample code
 void Wait(int semaph, int n)
 {
   struct sembuf sop;
@@ -19,6 +25,7 @@ void Wait(int semaph, int n)
 }
 
 /* Unlock the semaphore n of the semaphore set semaph */
+// Acknowldegement: This function provided by project sample code
 void Signal(int semaph, int n)
 {
   struct sembuf sop;
@@ -28,18 +35,87 @@ void Signal(int semaph, int n)
   semop(semaph,&sop,1);
 }
 
+void PrintSemaph(int semaph, int n) {
+  int val = semctl(semaph, n, GETVAL);
+  printf("semaph %i value = %i\n", n, val);
+}
+
 /* make an array of n semaphores with key k */
+// Acknowldegement: This function provided by project sample code
 int GetSemaphs(key_t k, int n)
 {
   int semid, i;
-
   /* get a set of n semaphores with the given key k */
-
   if ((semid=semget(k,n,IPC_CREAT|0666))!= -1){
     for (i=0;i<n;i++)
       Signal(semid,i); /* unlock all the semaphores */
   }
+
+  if ((semid < 0) ){
+    perror("semget failed");
+    exit(2);
+  }
+
   return semid;
+}
+
+struct StudentInfo *GetSharedMemories(int *id) {
+  // Get the ids of the two shared memory segments created;
+  *id = shmget(KEY, SEGSIZE*NUM_RECORDS, 0);
+  if (*id < 0){
+    perror("shmget failed 1");
+    exit(1);
+  }
+
+  // Attach the shared memory segments;
+  struct StudentInfo *infoptr=(struct StudentInfo *)shmat(*id, 0, 0);
+  if (infoptr <= (struct StudentInfo *) (0)) {
+    perror("shmat failed");
+    exit(2);
+  }
+
+  return infoptr;
+}
+
+int* GetReadCounter(int *read_id) {
+  *read_id = shmget(READ_KEY, sizeof(int),IPC_CREAT|0666);
+  if (*read_id <0){
+    perror("shmget failed");
+    exit(1);
+  }
+
+  // attach the shared memory segment to the process's address space
+  int *readptr=(int *)shmat(*read_id, 0, 0);
+  if (readptr <= (int *) (0)) {
+    perror("shmat failed");
+    exit(2);
+  }
+  return readptr;
+}
+
+void IncramentReadCount(int sema_set, int *readptr) {
+  //Wait(sema_set, 0);   // writing to readptr, lock semaphore
+  *readptr = *readptr+1;
+  //Signal(sema_set, 0);
+
+  Wait(sema_set, 1);  // reading readptr, lock semaphore
+  if (*readptr == 1) {
+    Wait(sema_set, 0);  // there are readers, lock writers
+  }
+  Signal(sema_set, 1); // done reading the readptr, free semaphore
+}
+
+// DO I NEED TO LOCK THE READ COUNTER.
+// SINCE I AM, I BLOCK WRT SEMAPHORE WHICH PREVENTS DECRAMENT FROM BEING CALLED
+void DecramentReadCount(int sema_set, int *readptr) {
+  //Wait(sema_set, 0);   // writing to readptr, lock semaphore
+  *readptr = *readptr-1;
+  //Signal(sema_set, 0);
+  Wait(sema_set, 1);    // reading readptr, lock semaphore
+  if (*readptr == 0) {
+    Signal(sema_set, 0);// no one is reading, free writers
+  }
+  Signal(sema_set,1);   // done reading to readptr, free semaphore
 }
 
 int ValidateName(char *fullname) {
@@ -105,12 +181,13 @@ int ChangeName(char *fullname, struct StudentInfo *student) {
 }
 
 int ValidateID(char *id) {
-  //printf("validtaing id: %s", id);
-  if (strlen(id) > ID_LENGTH) {
+  if (strlen(id) < 1) {
     return -1;
   }
 
-  if (strlen(id) < 1) {
+  id[ID_LENGTH-1] = '\0';
+  if (strlen(id) != ID_LENGTH-1) {
+    printf("id: %s is not of length %i.\n", id, ID_LENGTH-1);
     return -1;
   }
 
@@ -128,11 +205,11 @@ int ChangeID(char *id, struct StudentInfo *student) {
 }
 
 int ValidateAddress(char *fulladdr) {
-  if (strlen(fulladdr) > ADDRESS_LENGTH) {
+  if (strlen(fulladdr) < 1) {
     return -1;
   }
 
-  if (strlen(fulladdr) < 1) {
+  if (strlen(fulladdr) > ADDRESS_LENGTH) {
     return -1;
   }
 
@@ -151,11 +228,11 @@ int ChangeAddress(char *fulladdr, struct StudentInfo *student) {
 }
 
 int ValidatePhone(char *phoneNum) {
-  if (strlen(phoneNum) > PHONE_LENGTH) {
+  if (strlen(phoneNum) < 1) {
     return -1;
   }
 
-  if (strlen(phoneNum) < 1) {
+  if (strlen(phoneNum) > PHONE_LENGTH) {
     return -1;
   }
   // TODO: make sure all characters are numbers
@@ -184,5 +261,5 @@ void PrintStudent(struct StudentInfo *stu) {
   strcat(fullname, stu->lName);
   printf("%s\n ID: %s\n Address: %s\n Phone Number: %s\n",
    fullname, stu->id, stu->address, stu->telNumber);
-  printf(" Last modified by: %s\n \n ", stu->whoModified);
+  printf(" Last modified by: %s\n \n", stu->whoModified);
 }
