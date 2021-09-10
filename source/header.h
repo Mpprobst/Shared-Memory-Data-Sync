@@ -6,7 +6,7 @@
 #define SEGSIZE sizeof(struct StudentInfo)
 #define NUM_RECORDS 50
 
-#define NUM_SEMAPHS 2
+#define NUM_SEMAPHS 2 // semaph 0 is for data, semaph 1 is for read counter
 #define SEMA_KEY ((key_t)(1761))
 
 #define READ_KEY ((key_t)(1207))

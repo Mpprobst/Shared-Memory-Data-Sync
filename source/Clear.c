@@ -14,7 +14,6 @@
 #include "header.h"
 #include "password.h"
 
-// clear is a writer. writers use semaphore idx 0
 int main () {
   // Attach the shared memory segments;
   int id = 0;
@@ -25,12 +24,13 @@ int main () {
   // Get the id of the semaphore set created in Load.c;
   int sema_set=semget(SEMA_KEY, 0, 0);
 
+  char advisor[10];
   // Prompt the user for password;
-  if (ValidatePassword() == -1) {
+  if (ValidatePassword(advisor) == -1) {
     exit(1);
   }
-
-  //Wait(sema_set, 0); // assuming semaset is the id of the semaphore set
+  advisor[9] = '\0';
+  Wait(sema_set, 0); // writing to data, lock it
 
   // write the contents of the shared memory to file in the format of the input file;
   FILE *fp;
@@ -67,19 +67,22 @@ int main () {
   }
 
   fclose(fp);
-
+  sleep(2);
   // delete the shared memory segments
   shmdt((char *)infoptr); // detach the shared memory segment
   shmctl(id, IPC_RMID,(struct shmid_ds *)0);  // destroy shared memory segment
 
+  Wait(sema_set, 1); // writing to read counter, lock it
   shmdt((int *)readptr);  // detach the shared memory segment
   shmctl(read_id, IPC_RMID,(struct shmid_ds *)0); // destroy shared memory segment
 
   Signal(sema_set, 0);  // done writing
+  Signal(sema_set, 1);  // done writing
 
   // delete the semaphores.
   semctl(sema_set, 0, IPC_RMID); // Remove the semaphore set
 
   printf("Shared memory and semaphores destroyed.\n");
+  printf("Records saved in output.txt\n");
   return 0;
 }

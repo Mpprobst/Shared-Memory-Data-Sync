@@ -12,7 +12,6 @@
 #include <sys/sem.h>
 #include "header.h"
 
-// query is a reader. readers use semaphore idx 1
 int main() {
   int id = 0;
   int read_id = 0;
@@ -36,9 +35,8 @@ int main() {
 
   IncramentReadCount(sema_set, readptr);
 
-  Wait(sema_set, 1);  // reading records, lock semaphore
   printf("reading student records...\n");
-  sleep(2); // for debugging and testing
+  sleep(10); // for debugging and testing
 
   // print the records
   int stuIdx = -1;
@@ -50,14 +48,13 @@ int main() {
   }
 
   if (stuIdx != -1) {
-    printf("Student found!\n");
+    printf("Student found!\n\n");
     PrintStudent(&infoptr[stuIdx]);
   }
   else {
     printf("Could not find student with that ID.\n");
   }
 
-  Signal(sema_set, 1);  // done reading, free semaphore
   DecramentReadCount(sema_set, readptr);
 
 }

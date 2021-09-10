@@ -4,7 +4,7 @@
 #include "password.h"
 
 int EnterPassword(int attempt) {
-  printf("Please enter the password (20 char limit): ");
+  printf("Please enter your password: ");
   char input[21];
   fgets(input, sizeof(input), stdin);
   for (int i = 0; i < strlen(password); i++) {
@@ -16,7 +16,13 @@ int EnterPassword(int attempt) {
   return 0;
 }
 
-int ValidatePassword() {
+int ValidatePassword(char *username) {
+  printf("Please enter your username: ");
+  if (fgets(username, sizeof(username), stdin) ==  NULL) {
+    exit(0);
+  }
+  username[strlen(username)-1] = '\0';
+  
   for (int i = 0; i < NUM_ATTEMPTS; i++) {
     if (EnterPassword(i) == 0) {
       return 0;

@@ -14,7 +14,6 @@
 #include <sys/sem.h>
 #include "header.h"
 
-// load is a writer. writers use semaphore idx 0
 int main (int argc, char* argv[]) {
   if (argc != 2){
     fprintf(stderr, "usage: change <file name>\n");
@@ -68,7 +67,6 @@ int main (int argc, char* argv[]) {
   }
   free(line);
   fclose(fp);
-
   // Create a shared memory segment to store the students' records
   int id = shmget(KEY, SEGSIZE*NUM_RECORDS,IPC_CREAT|0666);
   if (id <0){
@@ -92,8 +90,6 @@ int main (int argc, char* argv[]) {
     exit(2);
   }
 
-  Wait(sema_set, 0); // writing, lock the shared memory
-
   // Create a shared memory segment to store the shared variable read_count;
   int *readptr;
   int read_id = shmget(READ_KEY, sizeof(int),IPC_CREAT|0666);
@@ -108,7 +104,7 @@ int main (int argc, char* argv[]) {
     perror("load: shmat failed");
     exit(2);
   }
-
+  Wait(sema_set, 0); // writing, lock the shared memory
   // Initialize read_count to 0 (the shared memory allocated for storing this var);
   *readptr = 0;
   // Load the shared memory segment with data from the file;

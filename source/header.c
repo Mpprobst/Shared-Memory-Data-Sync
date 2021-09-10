@@ -94,31 +94,27 @@ int* GetReadCounter(int *read_id) {
 }
 
 void IncramentReadCount(int sema_set, int *readptr) {
-  //Wait(sema_set, 0);   // writing to readptr, lock semaphore
+  Wait(sema_set, 1);   // writing to readptr, lock semaphore
   *readptr = *readptr+1;
-  //Signal(sema_set, 0);
 
-  Wait(sema_set, 1);  // reading readptr, lock semaphore
   if (*readptr == 1) {
-    Wait(sema_set, 0);  // there are readers, lock writers
+    Wait(sema_set, 0);  // there are readers, lock data
   }
-  Signal(sema_set, 1); // done reading the readptr, free semaphore
+  Signal(sema_set, 1); // done with  readptr, free semaphore
 }
 
-// DO I NEED TO LOCK THE READ COUNTER.
-// SINCE I AM, I BLOCK WRT SEMAPHORE WHICH PREVENTS DECRAMENT FROM BEING CALLED
 void DecramentReadCount(int sema_set, int *readptr) {
-  //Wait(sema_set, 0);   // writing to readptr, lock semaphore
+  Wait(sema_set, 1);   // writing to readptr, lock semaphore
   *readptr = *readptr-1;
-  //Signal(sema_set, 0);
-  Wait(sema_set, 1);    // reading readptr, lock semaphore
+
   if (*readptr == 0) {
     Signal(sema_set, 0);// no one is reading, free writers
   }
-  Signal(sema_set,1);   // done reading to readptr, free semaphore
+  Signal(sema_set,1);   // done with readptr, free semaphore
 }
 
 int ValidateName(char *fullname) {
+  //printf("validating %s (len: %lu)\n", fullname, strlen(fullname));
   if (strlen(fullname) < 1) {
     return -1;
   }
@@ -148,6 +144,10 @@ int ValidateName(char *fullname) {
 
 // return -1 for failure, 0 for success
 int ChangeName(char *fullname, struct StudentInfo *student) {
+  if (ValidateName(fullname) == -1) {
+    return -1;
+  }
+
   int ct = 0;
   int spaces[3];   // 2 max spaces between firstname, middlename, lastname, last idx is length of total string
   spaces[1] = strlen(fullname);
@@ -160,12 +160,8 @@ int ChangeName(char *fullname, struct StudentInfo *student) {
     }
   }
 
-  if (ValidateName(fullname) == -1) {
-    return -1;
-  }
-
   // todo: trim excess whitespace and capatialize name;
-  memcpy(student->fName, &fullname[0], spaces[0]*sizeof(char));
+  memcpy(student->fName, &fullname[0], (spaces[0])*sizeof(char));
   student->fName[spaces[0]] = '\0';
   if (ct == 2) {
     student->middleInit = fullname[spaces[1]-1];
@@ -175,8 +171,11 @@ int ChangeName(char *fullname, struct StudentInfo *student) {
   }
 
   memcpy(student->lName, &fullname[spaces[ct-1]+1], (spaces[ct]-spaces[ct-1])*sizeof(char));
-  student->lName[spaces[ct]-spaces[ct-1]-2] = '\0';
+  student->lName[strlen(student->lName)-1] = '\0';
   //printf("spacecount: %i. changed name to: %s %c %s\n", ct, student->fName, student->middleInit, student->lName);
+  //printf("fName: %s (%lu) space at %i ", student->fName, strlen(student->fName), spaces[0]);
+  //printf("lName: %s (%lu) space at: %i\n", student->lName, strlen(student->lName), spaces[ct]);
+
   return 0;
 }
 
@@ -199,8 +198,8 @@ int ChangeID(char *id, struct StudentInfo *student) {
     return -1;
   }
 
-  memcpy(student->id, id, (strlen(id)*sizeof(char)) );
-  student->id[ID_LENGTH-1] = '\0';
+  id[ID_LENGTH-1] = '\0';
+  memcpy(student->id, id, (ID_LENGTH*sizeof(char)) );
   return 0;
 }
 
@@ -222,8 +221,8 @@ int ChangeAddress(char *fulladdr, struct StudentInfo *student) {
     return -1;
   }
 
-  memcpy(student->address, fulladdr, (strlen(fulladdr)*sizeof(char)) );
-  student->address[strlen(fulladdr)-1] = '\0';
+  fulladdr[strlen(fulladdr)-1] = '\0';
+  memcpy(student->address, fulladdr, (ADDRESS_LENGTH*sizeof(char)) );
   return 0;
 }
 
@@ -232,7 +231,8 @@ int ValidatePhone(char *phoneNum) {
     return -1;
   }
 
-  if (strlen(phoneNum) > PHONE_LENGTH) {
+  phoneNum[PHONE_LENGTH-1] = '\0';
+  if (strlen(phoneNum) != PHONE_LENGTH-1) {
     return -1;
   }
   // TODO: make sure all characters are numbers
@@ -245,8 +245,8 @@ int ChangePhone(char *phoneNum, struct StudentInfo *student) {
     return -1;
   }
 
-  memcpy(student->telNumber, phoneNum, (strlen(phoneNum)*sizeof(char)) );
-  student->telNumber[PHONE_LENGTH-1] = '\0';
+  phoneNum[PHONE_LENGTH-1] = '\0';
+  memcpy(student->telNumber, phoneNum, (PHONE_LENGTH*sizeof(char)) );
   return 0;
 }
 
@@ -260,6 +260,6 @@ void PrintStudent(struct StudentInfo *stu) {
   }
   strcat(fullname, stu->lName);
   printf("%s\n ID: %s\n Address: %s\n Phone Number: %s\n",
-   fullname, stu->id, stu->address, stu->telNumber);
-  printf(" Last modified by: %s\n \n", stu->whoModified);
+    fullname, stu->id, stu->address, stu->telNumber);
+  printf(" Last modified by: %s\n", stu->whoModified);
 }
