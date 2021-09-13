@@ -11,7 +11,7 @@ This project contains several programs that work on a small set of student recor
 
 Each of the programs that comprise this project are implemented by the following files:
 
-# Load
+### Load
 usage: ./load <file.txt> 
 Load takes a text file containg student records where the lines of text are separated by newlines and appear in the order: "student name", "student id", "student address", "student telephone number".
 It is assumed that the info in the input file is correctly formatted.
