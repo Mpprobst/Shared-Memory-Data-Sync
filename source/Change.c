@@ -143,7 +143,7 @@ int main() {
 
     Wait(sema_set, 0);  // writing new record, lock semaph
 
-    sleep(3);
+    sleep(2);
 
     ChangeName(name, &infoptr[stuIdx]);
     ChangeID(newID, &infoptr[stuIdx]);
@@ -161,8 +161,11 @@ int main() {
     stuIdx = GetStudentIndex(sema_set, readptr, infoptr);
 
     Wait(sema_set, 0);  // lock while writing
+
     printf("Destroying record of:\n");
     PrintStudent(&infoptr[stuIdx]);
+
+    sleep(2);
 
     strcpy(infoptr[stuIdx].fName, "");
     strcpy(infoptr[stuIdx].lName, "");
@@ -171,17 +174,8 @@ int main() {
     strcpy(infoptr[stuIdx].address, "");
     strcpy(infoptr[stuIdx].telNumber, "");
     strcpy(infoptr[stuIdx].whoModified, "");
-    // overwrite the found student with every record after it;
-    /*for (int i = stuIdx < NUM_RECORDS-1; i++) {
-      strcpy(infoptr[i].fName, students[i+1].fName);
-      strcpy(infoptr[i].lName, students[i+1].lName);
-      infoptr[i].middleInit = students[i+1].middleInit;
-      strcpy(infoptr[i].id, students[i+1].id);
-      strcpy(infoptr[i].address, students[i+1].address);
-      strcpy(infoptr[i].telNumber, students[i+1].telNumber);
-      strcpy(infoptr[i].whoModified, advisor);
-    }*/
-    Signal(sema_set, 0);
+
+    Signal(sema_set, 0);  // done writing
   }
   else if (in == 'C') {
     printf("Enter ID of student to change: ");
@@ -201,6 +195,7 @@ int main() {
       }
 
       Wait(sema_set, 0);  // writing new name, lock semaph
+      sleep(2);
       ChangeName(name, &infoptr[stuIdx]);
       Signal(sema_set, 0);  // done creating student
     }
@@ -230,6 +225,7 @@ int main() {
       }
 
       Wait(sema_set, 0);  // writing new name, lock semaph
+      sleep(2);
       ChangeID(newID, &infoptr[stuIdx]);
       Signal(sema_set, 0);  // done editing student
     }
@@ -244,6 +240,7 @@ int main() {
       }
 
       Wait(sema_set, 0);  // writing new name, lock semaph
+      sleep(2);
       ChangeAddress(address, &infoptr[stuIdx]);
       Signal(sema_set, 0);  // done editing student
     }

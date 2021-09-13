@@ -68,6 +68,7 @@ int main () {
 
   fclose(fp);
   sleep(2);
+  
   // delete the shared memory segments
   shmdt((char *)infoptr); // detach the shared memory segment
   shmctl(id, IPC_RMID,(struct shmid_ds *)0);  // destroy shared memory segment
