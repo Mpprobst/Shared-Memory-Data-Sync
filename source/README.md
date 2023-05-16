@@ -1,7 +1,7 @@
-# CS570 - Programming Assignment 1
+# Shared Memory Data Synchronization
 ## Author: Michael Probst
 
-This repository contains the solution to the first assigment of the Modern Operating Systems course, CS570, at the University of Kentucky, instructed by Dr. Manivannan.
+This repository contains the resources for an assignment for an operating systems class I took in grad school. The goal is to synchronize data in shared memory.
 
 ## Summary
 
